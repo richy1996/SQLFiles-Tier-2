@@ -190,17 +190,17 @@ WITH recomend AS (
     FROM Members
 ),
 mems AS (
-    SELECT CONCAT(surname, ',', firstname) AS member_name, memid, recommendedby
+    SELECT surname || ', ' || firstname AS member_name, memid, recommendedby
     FROM Members
 ),
 recomend2 AS (
-SELECT r.recommendedby, m.member_name AS recommend_member
-FROM recomend AS r
-INNER JOIN (
-    SELECT memid, member_name
-    FROM mems
-) AS m ON r.recommendedby = m.memid
-WHERE r.recommendedby != 0
+    SELECT r.recommendedby, m.member_name AS recommend_member
+    FROM recomend AS r
+    INNER JOIN (
+        SELECT memid, member_name
+        FROM mems
+    ) AS m ON r.recommendedby = m.memid
+    WHERE r.recommendedby != 0
 )
 SELECT member_name, recommend_member
 FROM mems
@@ -209,7 +209,45 @@ ON mems.recommendedby = recomend2.recommendedby
 ORDER BY member_name;
 
 /* Q12: Find the facilities with their usage by member, but not guests */
-
+WITH mem AS (
+    SELECT
+        memid,
+        surname || ', ' || firstname AS member_name
+    FROM
+        Members
+    WHERE
+        memid != 0
+),
+booking_summary AS (
+    SELECT
+        f.name AS facility_name,
+        m.member_name,
+        COUNT(*) AS n
+    FROM
+        Bookings AS b
+        INNER JOIN Facilities AS f ON b.facid = f.facid
+        INNER JOIN mem AS m ON b.memid = m.memid
+    GROUP BY
+        f.name,
+        m.member_name
+)
+SELECT
+    facility_name,
+    member_name,
+    n
+FROM
+    booking_summary;
 
 /* Q13: Find the facilities usage by month, but not guests */
-
+SELECT
+    f.name AS facility_name,
+    CAST(strftime('%m', b.starttime) AS INTEGER) AS month,
+    COUNT(*) AS n
+FROM
+    bookings AS b
+    INNER JOIN facilities AS f ON b.facid = f.facid
+WHERE
+    b.memid != 0
+GROUP BY
+    f.name,
+    CAST(strftime('%m', b.starttime) AS INTEGER);
